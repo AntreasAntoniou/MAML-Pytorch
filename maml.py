@@ -356,7 +356,7 @@ class MAML(nn.Module):
 			# [setsz]
 			pred_q = F.softmax(pred_q, dim=1).argmax(dim=1)
 			# scalar
-			correct = np.mean(torch.eq(pred_q, query_y[i]).cpu())
+			correct = torch.eq(pred_q, query_y[i]).data.cpu().float().mean()
 			corrects[0].append(correct)
 
 			# this is the loss and accuracy after the first update
@@ -366,7 +366,7 @@ class MAML(nn.Module):
 			# [setsz]
 			pred_q = F.softmax(pred_q, dim=1).argmax(dim=1)
 			# scalar
-			correct = np.mean(torch.eq(pred_q, query_y[i]).cpu())
+			correct = torch.eq(pred_q, query_y[i]).data.cpu().float().mean()
 			corrects[1].append(correct)
 
 			for k in range(1, self.K):
@@ -384,7 +384,7 @@ class MAML(nn.Module):
 				pred_q = self.net(query_x[i], fast_weights, bns=None, training=training)
 				loss_q = F.cross_entropy(pred_q, query_y[i])
 				pred_q = F.softmax(pred_q, dim=1).argmax(dim=1)
-				correct = np.mean(torch.eq(pred_q, query_y[i]).cpu())
+				correct = torch.eq(pred_q, query_y[i]).data.cpu().float().mean()
 				corrects[k+1].append(correct)
 
 			# 4. record last step's loss for task i
