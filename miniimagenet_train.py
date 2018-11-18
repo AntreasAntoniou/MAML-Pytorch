@@ -8,7 +8,7 @@ import random, sys, pickle
 import argparse
 
 from maml import MAML
-
+import tqdm
 
 
 
@@ -48,45 +48,45 @@ def main():
 
 	for epoch in range(1000):
 		# batchsz here means total episode number
-		mini = MiniImagenet('/hdd1/liangqu/datasets/miniimagenet/', mode='train', n_way=n_way, k_shot=k_shot, k_query=k_query,
+		mini = MiniImagenet('/disk/scratch/antreas/MAML-Pytorch/datasets/mini_imagenet/', mode='train', n_way=n_way, k_shot=k_shot, k_query=k_query,
 		                    batchsz=10000, resize=imgsz)
 		# fetch meta_batchsz num of episode each time
 		db = DataLoader(mini, meta_batchsz, shuffle=True, num_workers=meta_batchsz, pin_memory=True)
+		with tqdm.tqdm(total=(len(db))) as train_info:
+			for step, batch in enumerate(db):
 
-		for step, batch in enumerate(db):
+				support_x = batch[0].to(device)
+				support_y = batch[1].to(device)
+				query_x = batch[2].to(device)
+				query_y = batch[3].to(device)
 
-			support_x = batch[0].to(device)
-			support_y = batch[1].to(device)
-			query_x = batch[2].to(device)
-			query_y = batch[3].to(device)
-
-			accs = net(support_x, support_y, query_x, query_y, training = True)
-
-			if step % 50 == 0:
-				print(epoch, step, '\t', accs)
+				accs = net(support_x, support_y, query_x, query_y, training = True)
+				train_info.update(1)
+				if step % 50 == 0:
+					train_info.set_description("{}".format((epoch, step, '\t', accs)))
 
 
-			if step % 500 == 0 and step != 0: # evaluation
-				# test for 600 episodes
-				mini_test = MiniImagenet('/hdd1/liangqu/datasets/miniimagenet/', mode='test', n_way=n_way, k_shot=k_shot, k_query=k_query,
-				                    batchsz=600, resize=imgsz)
-				db_test = DataLoader(mini_test, meta_batchsz, shuffle=True, num_workers=meta_batchsz, pin_memory=True)
-				accs_all_test = []
-				for batch in db_test:
-					support_x = batch[0].to(device)
-					support_y = batch[1].to(device)
-					query_x = batch[2].to(device)
-					query_y = batch[3].to(device)
+				if step % 500 == 0 and step != 0: # evaluation
+					# test for 600 episodes
+					mini_test = MiniImagenet('/disk/scratch/antreas/MAML-Pytorch/datasets/mini_imagenet/', mode='test', n_way=n_way, k_shot=k_shot, k_query=k_query,
+										batchsz=600, resize=imgsz)
+					db_test = DataLoader(mini_test, meta_batchsz, shuffle=True, num_workers=meta_batchsz, pin_memory=True)
+					accs_all_test = []
+					for batch in db_test:
+						support_x = batch[0].to(device)
+						support_y = batch[1].to(device)
+						query_x = batch[2].to(device)
+						query_y = batch[3].to(device)
 
-					accs = net(support_x, support_y, query_x, query_y, training = False)
-					accs_all_test.append(accs)
-				# [600, K+1]
-				accs_all_test = np.array(accs_all_test)
-				# [600, K+1] => [K+1]
-				means = accs_all_test.mean(axis=0)
-				# compute variance for last step K
-				m, h = mean_confidence_interval(accs_all_test[:, K])
-				print('>>Test:\t', means, 'variance[K]: %.4f'%h, '<<')
+						accs = net(support_x, support_y, query_x, query_y, training = False)
+						accs_all_test.append(accs)
+					# [600, K+1]
+					accs_all_test = np.array(accs_all_test)
+					# [600, K+1] => [K+1]
+					means = accs_all_test.mean(axis=0)
+					# compute variance for last step K
+					m, h = mean_confidence_interval(accs_all_test[:, K])
+					print('>>Test:\t', means, 'variance[K]: %.4f'%h, '<<')
 
 
 
