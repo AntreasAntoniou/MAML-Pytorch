@@ -48,10 +48,10 @@ def main():
 
 	for epoch in range(1000):
 		# batchsz here means total episode number
-		mini = MiniImagenet('/disk/scratch/antreas/MAML-Pytorch/datasets/mini_imagenet/', mode='train', n_way=n_way, k_shot=k_shot, k_query=k_query,
+		mini = MiniImagenet('/disk/scratch/antreas/custom_maml_pytorch/datasets/mini_imagenet/', mode='train', n_way=n_way, k_shot=k_shot, k_query=k_query,
 		                    batchsz=10000, resize=imgsz)
 		# fetch meta_batchsz num of episode each time
-		db = DataLoader(mini, meta_batchsz, shuffle=True, num_workers=meta_batchsz, pin_memory=True)
+		db = DataLoader(mini, meta_batchsz, shuffle=True, num_workers=meta_batchsz, pin_memory=False)
 		with tqdm.tqdm(total=(len(db))) as train_info:
 			for step, batch in enumerate(db):
 

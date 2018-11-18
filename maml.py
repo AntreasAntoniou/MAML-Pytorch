@@ -325,7 +325,7 @@ class MAML(nn.Module):
 		batchsz, setsz, c_, h, w = support_x.size()
 
 		losses_q = [] # losses_q[i], i is tasks idx
-		corrects = [] * (self.K+1) # corrects[i] save cumulative correct number of all tasks in step k
+		corrects = [[] for i in range(self.K+1)] # corrects[i] save cumulative correct number of all tasks in step k
 
 		# TODO: add multi-threading support
 		# NOTICE: although the GIL limit the multi-threading performance severely, it does make a difference. 
@@ -356,7 +356,7 @@ class MAML(nn.Module):
 			# [setsz]
 			pred_q = F.softmax(pred_q, dim=1).argmax(dim=1)
 			# scalar
-			correct = torch.eq(pred_q, query_y[i]).sum().item()
+			correct = torch.eq(pred_q, query_y[i]).mean().item()
 			corrects[0].append(correct)
 
 			# this is the loss and accuracy after the first update
@@ -366,7 +366,7 @@ class MAML(nn.Module):
 			# [setsz]
 			pred_q = F.softmax(pred_q, dim=1).argmax(dim=1)
 			# scalar
-			correct = torch.eq(pred_q, query_y[i]).sum().item()
+			correct = torch.eq(pred_q, query_y[i]).mean().item()
 			corrects[1].append(correct)
 
 			for k in range(1, self.K):
@@ -384,7 +384,7 @@ class MAML(nn.Module):
 				pred_q = self.net(query_x[i], fast_weights, bns=None, training=training)
 				loss_q = F.cross_entropy(pred_q, query_y[i])
 				pred_q = F.softmax(pred_q, dim=1).argmax(dim=1)
-				correct = torch.eq(pred_q, query_y[i]).sum().item() # convert to numpy
+				correct = torch.eq(pred_q, query_y[i]).mean().item() # convert to numpy
 				corrects[k+1].append(correct)
 
 			# 4. record last step's loss for task i
